@@ -3,11 +3,22 @@ const router = new express.Router()
 const Inventory = require('../models/inventoryModel')
 const auth = require('../middleware/auth')
 const multer = require('multer')
+const sharp = require('sharp')
 const fs = require('fs')
+
 
 
 //create inventory
 router.post('/items',auth,async (req,res)=>{
+
+    if (!fs.existsSync(req.body.image)) 
+    {
+        return res.status(400).send({error:"Please provide valid path for image"})
+
+    } 
+
+
+   
     const inventory = new Inventory(
         {
         name:req.body.name,
@@ -17,7 +28,8 @@ router.post('/items',auth,async (req,res)=>{
         manufacturing_time: new Date().toLocaleString('en-US',{timeZone:'CST'}),
         image: req.body.image,
         owner:req.user._id
-    }
+        
+      }
     )
 
     try{
@@ -31,15 +43,7 @@ router.post('/items',auth,async (req,res)=>{
 
 })
 
-const upload = multer({
-    dest:'images'
-})
 
-// upload inventory image
-router.post('/items/image',auth,upload.single('image'),(req,res) => {
-        
-    res.status(201).send("image successfully save")
-})
 
 
 // get inventory image
@@ -50,9 +54,20 @@ router.get('/items/:id/image',auth,async(req,res) => {
             {  
                 return res.status(404).send()
             } 
-            const image = fs.readFileSync(inventory.image)
-            res.set('Content-Type', 'image/jpg');
-            res.send(image)
+            //const image = fs.readFileSync(inventory.image)
+
+
+            fs.readFile(inventory.image, (err, data) => {
+                if (err) {
+                  console.error(err);
+                  return res.status(500).send({ error: "Failed to read the image" });
+                }
+                res.contentType('image/png');
+                return res.send(data);
+              });
+
+            // res.set('Content-Type', 'image/jpg');
+            // res.send(inventory.image)
     }
     catch(e)
     {
@@ -76,26 +91,7 @@ router.get('/items',auth,async (req,res)=>{
         match.category = category
     }
     try{
-            // if(name !== undefined)
-            // {
-            //     var inventory = await Inventory.find({name})
-            // }
-            // else if(category !== undefined)
-            // {
-            //     var inventory = await Inventory.find({category})
-            // }
-            
-            // if(inventory.length === 0)
-            //     {
-            //         return res.status(404).send()
-            //     }
-            // const ex_time = new Date(inventory[0].expiry_time)
-            // const cu_time = new Date()
-          
-            // if(ex_time.getTime()-cu_time.getTime() >= 0)
-            // {
-            //     return res.send({inventory,is_expired:false})
-            // }
+           
             await req.user.populate({
                 path:'items',
                 match
@@ -166,15 +162,15 @@ router.delete('/items/:id',auth,async (req,res)=> {
         {  
             return res.status(404).send()
         } 
-        console.log(inventory.image)
-        const imagePath = inventory.image
+        // console.log(inventory.image)
+        // const imagePath = inventory.image
 
-        fs.unlink(imagePath, (err) => {
-            if (err) {
-              return console.log({ message: 'Error deleting image' });
-            }
-            return console.log({ message: 'Image deleted successfully' });
-          });
+        // fs.unlink(imagePath, (err) => {
+        //     if (err) {
+        //       return console.log({ message: 'Error deleting image' });
+        //     }
+        //     return console.log({ message: 'Image deleted successfully' });
+        //   });
 
         res.status(200).send(inventory)      
         
