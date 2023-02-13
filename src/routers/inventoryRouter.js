@@ -2,8 +2,6 @@ const express = require('express')
 const router = new express.Router()
 const Inventory = require('../models/inventoryModel')
 const auth = require('../middleware/auth')
-const multer = require('multer')
-const sharp = require('sharp')
 const fs = require('fs')
 
 
@@ -54,7 +52,7 @@ router.get('/items/:id/image',auth,async(req,res) => {
             {  
                 return res.status(404).send()
             } 
-            //const image = fs.readFileSync(inventory.image)
+            
 
 
             fs.readFile(inventory.image, (err, data) => {
@@ -111,6 +109,7 @@ router.get('/items',auth,async (req,res)=>{
            })
            res.status(200).send(filterItems)
            
+           
     }
 
     catch(e)
@@ -124,6 +123,7 @@ router.get('/items',auth,async (req,res)=>{
 router.patch('/items/:id',auth,async (req,res)=>{
         
         const updates = Object.keys(req.body)
+        
         const allowedUpdates = ['name','expiry_time','quantity','category','image']
         const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
 
@@ -139,7 +139,20 @@ router.patch('/items/:id',auth,async (req,res)=>{
                     return res.status(404).send()
                 } 
                  
-                updates.forEach((update)=>inventory[update]=req.body[update])
+                updates.forEach((update)=>{
+                         if(update === 'image')
+                         {
+                            fs.readFile(req.body[update], (err, data) => {
+                                if (err) {
+                                  
+                                  return res.status(500).send({ error: "image path is not valid" });
+                                }
+
+                              });
+                         }
+                         inventory[update]=req.body[update]
+                })
+                
                 await inventory.save()
                 res.status(200).send(inventory) 
         }
@@ -162,15 +175,6 @@ router.delete('/items/:id',auth,async (req,res)=> {
         {  
             return res.status(404).send()
         } 
-        // console.log(inventory.image)
-        // const imagePath = inventory.image
-
-        // fs.unlink(imagePath, (err) => {
-        //     if (err) {
-        //       return console.log({ message: 'Error deleting image' });
-        //     }
-        //     return console.log({ message: 'Image deleted successfully' });
-        //   });
 
         res.status(200).send(inventory)      
         

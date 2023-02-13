@@ -15,6 +15,7 @@ const inventorySchema = new mongoose.Schema({
         type:String,
         required:true,
         trim:true
+        
     },
     quantity:{
         type:Number,
@@ -22,7 +23,7 @@ const inventorySchema = new mongoose.Schema({
     },
     manufacturing_time:{
         type:String,
-        required:true
+         required:true
     },
     image:{
          type:String,
